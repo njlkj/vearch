@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/vearch/vearch/proto/entity"
+	"github.com/vearch/vearch/util"
 	"net/http"
 	"strings"
 	"time"
@@ -108,6 +109,8 @@ func (handler *DocumentHandler) ExportToServer() error {
 
 	// update doc: /$dbName/$spaceName/$docId/_update
 	handler.httpServer.HandlesMethods([]string{http.MethodPost, http.MethodPut}, fmt.Sprintf("/{%s}/{%s}/{%s}/_update", URLParamDbName, URLParamSpaceName, URLParamID), []netutil.HandleContinued{handler.handleTimeout, handler.handleAuth, handler.handleUpdateDoc}, nil)
+
+	handler.httpServer.HandlesMethods([]string{http.MethodPost, http.MethodGet}, fmt.Sprintf("/_encrypt"), []netutil.HandleContinued{handler.handleTimeout, handler.namePasswordEncrypt}, nil)
 
 	return nil
 }
@@ -638,5 +641,22 @@ func (handler *DocumentHandler) handleDeleteByQuery(ctx context.Context, w http.
 	log.Debug("handleDeleteByQuery cost :%f", serviceCost)
 
 	resp.SendJson(ctx, w, delByQueryResp)
+	return ctx, true
+}
+
+
+func (handler *DocumentHandler) namePasswordEncrypt(ctx context.Context, w http.ResponseWriter, r *http.Request, params netutil.UriParams) (context.Context, bool) {
+
+	reqArgs := netutil.GetUrlQuery(r)
+
+	userName := reqArgs["name"]
+	password := reqArgs["password"]
+
+	if userName == "" || password == "" {
+		resp.SendErrorRootCause(ctx, w, http.StatusBadRequest, "", "url param must have ip:port?name=yourName&password=yourPassword")
+		return ctx, true
+	}
+
+	resp.SendJsonHttpReplySuccess(ctx, w, util.AuthEncrypt(userName, password))
 	return ctx, true
 }
