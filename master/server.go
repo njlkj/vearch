@@ -113,6 +113,7 @@ func (s *Server) Start() (err error) {
 	engine := gin.Default()
 
 	ExportToClusterHandler(engine, service)
+	ExportToUserHandler(engine, service)
 	ExportToMonitorHandler(engine, monitorService)
 
 	//register monitor
